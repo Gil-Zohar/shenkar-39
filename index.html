@@ -61,7 +61,9 @@ html,body{
 .rank-item:last-child{border-bottom:none}
 .rank-item:hover{background:var(--bg-deep)}
 .rank-num{width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--bg);display:grid;place-items:center;font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:15px;flex-shrink:0}
-.rank-num.gold{background:var(--gold)}
+.rank-num.gold{background:linear-gradient(135deg,#FFD700,#FFA500);color:var(--ink);box-shadow:0 2px 8px rgba(255,215,0,.3)}
+.rank-num.silver{background:linear-gradient(135deg,#C0C0C0,#A8A8A8);color:var(--ink);box-shadow:0 2px 8px rgba(192,192,192,.3)}
+.rank-num.bronze{background:linear-gradient(135deg,#CD7F32,#8B4513);color:#fff;box-shadow:0 2px 8px rgba(205,127,50,.3)}
 .rank-num.bad{background:var(--warn)}
 .rank-info{flex:1}
 .rank-name{font-weight:600;font-size:15px;margin-bottom:3px}
@@ -433,7 +435,7 @@ html,body{
   <div class="sep">· · ·</div>
 
   <section>
-    <div class="sh"><h2>🏆 דייר השנה</h2></div>
+    <div class="sh"><h2>🏆 דירוג דיירים לפי תשלומים בזמן</h2></div>
     <div class="rank-list" id="topTenants"></div>
   </section>
 
@@ -1254,17 +1256,19 @@ function renderStats(){
     }
   });
 
-  const topTenants=Object.values(tenantScores).sort((a,b)=>b.rate-a.rate||b.onTime-a.onTime).slice(0,5);
-  document.getElementById('topTenants').innerHTML=topTenants.length?topTenants.map((t,i)=>`
-    <div class="rank-item">
-      <div class="rank-num${i===0?' gold':''}">${i+1}</div>
+  const topTenants=Object.values(tenantScores).sort((a,b)=>b.rate-a.rate||b.onTime-a.onTime);
+  document.getElementById('topTenants').innerHTML=topTenants.length?topTenants.map((t,i)=>{
+    const medal=i===0?' gold':i===1?' silver':i===2?' bronze':'';
+    const emoji=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    return `<div class="rank-item">
+      <div class="rank-num${medal}">${emoji}</div>
       <div class="rank-info">
         <div class="rank-name">${t.name} · חדר ${t.room}</div>
         <div class="rank-meta">${t.onTime} תשלומים בזמן מתוך ${t.total}</div>
       </div>
       <div class="rank-value">${Math.round(t.rate)}%</div>
-    </div>
-  `).join(''):'<div class="empty">אין מספיק נתונים</div>';
+    </div>`;
+  }).join(''):'<div class="empty">אין מספיק נתונים</div>';
 
   // Late tenants (store for click handler)
   window._tenantScores=tenantScores;
