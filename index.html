@@ -74,6 +74,16 @@ html,body{
 .chart-fill{height:100%;background:var(--accent);transition:width .6s cubic-bezier(.2,0,0,1);display:flex;align-items:center;justify-content:flex-end;padding:0 10px}
 .chart-fill span{color:var(--bg);font-size:12px;font-weight:600}
 .chart-value{min-width:80px;text-align:left;font-family:'Frank Ruhl Libre',serif;font-size:18px;font-weight:700}
+.history-item{padding:14px 16px;border-bottom:1px solid var(--line-s);display:flex;justify-content:space-between;align-items:center;transition:background .15s}
+.history-item:last-child{border-bottom:none}
+.history-item:hover{background:var(--bg-deep)}
+.history-item.late{background:var(--warn-s)}
+.history-item.ontime{background:var(--accent-soft)}
+.history-month{font-weight:600;font-size:15px;margin-bottom:4px}
+.history-date{font-size:12px;color:var(--faint)}
+.history-badge{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.history-badge.late{background:var(--warn);color:#fff}
+.history-badge.ontime{background:var(--good);color:#fff}
 
 /* MONTH NAV */
 .mnav-wrap{display:flex;justify-content:center;margin-bottom:36px}
@@ -479,6 +489,23 @@ html,body{
       <button class="btn btn-p" onclick="saveTenant()">שמירה</button>
       <button class="btn" onclick="closeM('tenantModal')">ביטול</button>
       <button class="btn btn-g" id="tnDel" onclick="delTenant()" style="margin-inline-start:auto;color:var(--warn);display:none">מחיקה</button>
+    </div>
+  </div>
+</div>
+
+<!-- LATE HISTORY MODAL -->
+<div class="mbg" id="lateHistoryModal" onclick="if(event.target===this)closeM('lateHistoryModal')">
+  <div class="modal">
+    <div class="mhd">
+      <h3 id="lateHistoryTitle">היסטוריית איחורים</h3>
+      <button class="btn btn-g bicon" onclick="closeM('lateHistoryModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="iblock" id="lateHistoryInfo"></div>
+      <div id="lateHistoryList" style="max-height:400px;overflow-y:auto"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeM('lateHistoryModal')">סגור</button>
     </div>
   </div>
 </div>
@@ -1070,14 +1097,15 @@ function renderStats(){
     </div>
   `).join(''):'<div class="empty">אין מספיק נתונים</div>';
 
-  // Late tenants
+  // Late tenants (store for click handler)
+  window._tenantScores=tenantScores;
   const lateTenants=Object.values(tenantScores).filter(t=>t.late>0).sort((a,b)=>b.late-a.late||a.rate-b.rate).slice(0,5);
   document.getElementById('lateTenants').innerHTML=lateTenants.length?lateTenants.map((t,i)=>`
-    <div class="rank-item">
+    <div class="rank-item" style="cursor:pointer" onclick="showLateHistory('${t.name}','${t.room}')">
       <div class="rank-num bad">${i+1}</div>
       <div class="rank-info">
         <div class="rank-name">${t.name} · חדר ${t.room}</div>
-        <div class="rank-meta">${t.late} איחורים מתוך ${t.total} תשלומים</div>
+        <div class="rank-meta">${t.late} איחורים מתוך ${t.total} תשלומים · לחץ לפרטים</div>
       </div>
       <div class="rank-value" style="color:var(--warn)">${t.late}</div>
     </div>
@@ -1131,6 +1159,74 @@ function renderStats(){
       <div class="rank-value" style="color:var(--warn)">₪${fmt(d.remaining)}</div>
     </div>
   `).join(''):'<div class="empty">כל הפיקדונות שולמו במלואם 🎉</div>';
+}
+
+function showLateHistory(name,room){
+  const tenant=S.tenants.find(t=>t.name===name&&t.room===room);
+  if(!tenant)return;
+
+  // Calculate all months with data
+  const allMonths=new Set();
+  S.tenants.forEach(t=>{
+    t.pays.forEach(p=>allMonths.add(p.month));
+  });
+  const months=Array.from(allMonths).sort();
+
+  // Build payment history
+  const history=[];
+  months.forEach(m=>{
+    if(!isAct(tenant,m))return;
+    const p=getPay(tenant,m);
+    if(!p||p.paid===0)return;
+
+    const dueDay=getTenantDueDay(tenant,m);
+    const [y,mo]=m.split('-').map(Number);
+    const dueDate=`${y}-${String(mo).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
+    const isLate=p.date>dueDate;
+
+    let daysLate=0;
+    if(isLate){
+      const due=new Date(dueDate);
+      const paid=new Date(p.date);
+      daysLate=Math.floor((paid-due)/(1000*60*60*24));
+    }
+
+    history.push({
+      month:m,
+      dueDate,
+      paidDate:p.date,
+      isLate,
+      daysLate
+    });
+  });
+
+  // Reverse to show newest first
+  history.reverse();
+
+  // Update modal
+  document.getElementById('lateHistoryTitle').textContent=`${name} · חדר ${room}`;
+  const lateCount=history.filter(h=>h.isLate).length;
+  const ontimeCount=history.length-lateCount;
+  document.getElementById('lateHistoryInfo').innerHTML=`
+    <strong>סיכום:</strong> ${lateCount} איחורים, ${ontimeCount} תשלומים בזמן מתוך ${history.length} תשלומים
+  `;
+
+  document.getElementById('lateHistoryList').innerHTML=history.length?history.map(h=>`
+    <div class="history-item ${h.isLate?'late':'ontime'}">
+      <div>
+        <div class="history-month">${mlab(h.month)}</div>
+        <div class="history-date">
+          יעד: ${fmtD(h.dueDate)} · שולם: ${fmtD(h.paidDate)}
+          ${h.isLate?` · איחור ${h.daysLate} ${h.daysLate===1?'יום':'ימים'}`:''}
+        </div>
+      </div>
+      <span class="history-badge ${h.isLate?'late':'ontime'}">
+        ${h.isLate?'⏰ איחור':'✓ בזמן'}
+      </span>
+    </div>
+  `).join(''):'<div class="empty">אין נתונים</div>';
+
+  document.getElementById('lateHistoryModal').classList.add('open');
 }
 
 function hideLoading(){const l=document.getElementById('fbLoading');if(l)l.style.display='none';}
