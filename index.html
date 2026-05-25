@@ -375,6 +375,30 @@ html,body{
 <!-- STATS TAB -->
 <main class="page tab-content" id="statsTab" style="display:none">
 
+  <!-- Stats Controls -->
+  <section style="margin-bottom:32px">
+    <div style="background:var(--surface);border:1px solid var(--line);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:12px">
+        <label style="font-size:13px;font-weight:500;color:var(--soft)">תקופת הצגה:</label>
+        <select id="statsPeriod" onchange="renderStats()" style="font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer">
+          <option value="all">כל התקופה</option>
+          <option value="from-reset">מנקודת ההתחלה ואילך</option>
+        </select>
+        <span id="statsResetInfo" style="font-size:12px;color:var(--faint);display:none"></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-p" onclick="setStatsReset()">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg>
+          קבע נקודת התחלה
+        </button>
+        <button class="btn" onclick="clearStatsReset()" id="clearResetBtn" style="display:none">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          בטל נקודת התחלה
+        </button>
+      </div>
+    </div>
+  </section>
+
   <section>
     <div class="sh"><h2>סיכום כללי</h2></div>
     <div class="stat-grid">
@@ -553,6 +577,7 @@ function mkPays(from,to,rent,day){
 }
 
 const SEED={
+  statsResetDate:null, // Date when user clicked "reset stats" - null = show all time
   tenants:[
     {id:'t1',room:'1',name:'אמיר',phone:'',rent:3500,moveIn:'2026-05-01',dT:3500,dP:3500,
      pays:[{month:'2026-05',paid:3500,date:'2026-05-01'}]},
@@ -616,6 +641,8 @@ dbRef.on('value', snapshot => {
   }
   hideLoading();
   render();
+  // Initialize stats reset date if missing
+  if(S.statsResetDate===undefined) S.statsResetDate=null;
 });
 
 // Connection indicator
@@ -1015,17 +1042,70 @@ function switchTab(tab){
   }else{
     document.getElementById('monthlyTab').style.display='none';
     document.getElementById('statsTab').style.display='block';
+    updateStatsResetUI();
     renderStats();
   }
 }
 
+function setStatsReset(){
+  if(confirm('האם לקבוע את התאריך הנוכחי כנקודת התחלה לסטטיסטיקות?\n\nהנתונים לא יימחקו, רק הסטטיסטיקות יתחילו להיספר מהתאריך הזה.')){
+    S.statsResetDate=new Date().toISOString().slice(0,10);
+    save();
+    updateStatsResetUI();
+    renderStats();
+    toast('נקודת התחלה נקבעה ✓');
+  }
+}
+
+function clearStatsReset(){
+  if(confirm('האם לבטל את נקודת ההתחלה?\n\nהסטטיסטיקות יציגו שוב את כל ההיסטוריה.')){
+    S.statsResetDate=null;
+    document.getElementById('statsPeriod').value='all';
+    save();
+    updateStatsResetUI();
+    renderStats();
+    toast('נקודת ההתחלה בוטלה');
+  }
+}
+
+function updateStatsResetUI(){
+  const hasReset=!!S.statsResetDate;
+  const clearBtn=document.getElementById('clearResetBtn');
+  const resetInfo=document.getElementById('statsResetInfo');
+  const periodSelect=document.getElementById('statsPeriod');
+
+  if(hasReset){
+    clearBtn.style.display='inline-flex';
+    resetInfo.style.display='inline';
+    resetInfo.textContent=`(${fmtD(S.statsResetDate)})`;
+    periodSelect.querySelector('option[value="from-reset"]').textContent=`מ-${fmtD(S.statsResetDate)} ואילך`;
+  }else{
+    clearBtn.style.display='none';
+    resetInfo.style.display='none';
+    periodSelect.value='all';
+  }
+}
+
 function renderStats(){
+  // Update UI
+  updateStatsResetUI();
+
+  // Get filter mode
+  const filterMode=document.getElementById('statsPeriod').value;
+  const resetDate=S.statsResetDate;
+
   // Calculate all months with data
   const allMonths=new Set();
   S.tenants.forEach(t=>{
     t.pays.forEach(p=>allMonths.add(p.month));
   });
-  const months=Array.from(allMonths).sort();
+  let months=Array.from(allMonths).sort();
+
+  // Apply filter
+  if(filterMode==='from-reset'&&resetDate){
+    const resetMonth=resetDate.substring(0,7); // YYYY-MM
+    months=months.filter(m=>m>=resetMonth);
+  }
 
   // Total revenue
   let totalRev=0;
