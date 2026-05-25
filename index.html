@@ -1124,11 +1124,8 @@ function renderStats(){
   });
   let months=Array.from(allMonths).sort();
 
-  // Apply filter
-  if(filterMode==='from-reset'&&resetDate){
-    const resetMonth=resetDate.substring(0,7); // YYYY-MM
-    months=months.filter(m=>m>=resetMonth);
-  }
+  // Don't filter months here - we'll filter by payment dates later
+  // Keep all months for now so we can check individual payment dates
 
   // Total revenue
   let totalRev=0;
@@ -1139,15 +1136,31 @@ function renderStats(){
     S.tenants.forEach(t=>{
       if(isAct(t,m)){
         const p=getPay(t,m);
-        monthRev+=(p?p.paid:0);
+        if(p&&p.paid>0){
+          // Apply reset date filter
+          if(filterMode==='from-reset'&&resetDate&&p.date<resetDate){
+            return; // Skip this payment
+          }
+          monthRev+=p.paid;
+        }
       }
     });
     S.parking.forEach(p=>{
       const pay=getParkPay(p,m);
-      monthRev+=(pay?pay.paid:0);
+      if(pay&&pay.paid>0){
+        // Apply reset date filter
+        if(filterMode==='from-reset'&&resetDate&&pay.date<resetDate){
+          return; // Skip this payment
+        }
+        monthRev+=pay.paid;
+      }
     });
-    monthlyRevs[m]=monthRev;
-    totalRev+=monthRev;
+
+    // Only count months with revenue (after filtering)
+    if(monthRev>0){
+      monthlyRevs[m]=monthRev;
+      totalRev+=monthRev;
+    }
   });
 
   const avgMonth=months.length>0?totalRev/months.length:0;
@@ -1197,6 +1210,17 @@ function renderStats(){
     allRelevantMonths.forEach(m=>{
       if(!isAct(t,m))return;
       const p=getPay(t,m);
+
+      // Apply reset date filter - skip payments before reset date
+      if(filterMode==='from-reset'&&resetDate){
+        const dueDay=getTenantDueDay(t,m);
+        const [y,mo]=m.split('-').map(Number);
+        const dueDate=`${y}-${String(mo).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
+
+        // Skip if payment/due date is before reset date
+        if(p&&p.date<resetDate)return;
+        if(!p&&dueDate<resetDate)return;
+      }
 
       // Skip first month (move-in month) - it's always "on time"
       if(m===moveInMonth){
@@ -1258,12 +1282,18 @@ function renderStats(){
 
   // Room occupancy
   const roomStats=S.tenants.map(t=>{
-    const moveIn=new Date(t.moveIn);
+    // Use reset date if in filter mode, otherwise use actual move-in
+    let startDate=t.moveIn;
+    if(filterMode==='from-reset'&&resetDate&&t.moveIn<resetDate){
+      startDate=resetDate;
+    }
+
+    const start=new Date(startDate);
     const now=new Date();
-    const days=Math.floor((now-moveIn)/(1000*60*60*24));
+    const days=Math.max(0,Math.floor((now-start)/(1000*60*60*24)));
     const months=Math.floor(days/30);
     return{name:t.name,room:t.room,days,months};
-  }).sort((a,b)=>b.days-a.days);
+  }).filter(r=>r.days>0).sort((a,b)=>b.days-a.days);
 
   const maxDays=roomStats[0]?.days||1;
   document.getElementById('roomOccupancy').innerHTML=roomStats.length?roomStats.map(r=>`
