@@ -1070,10 +1070,19 @@ function renderStats(){
   const tenantScores={};
   S.tenants.forEach(t=>{
     let onTime=0,late=0,total=0;
+    const moveInMonth=t.moveIn.substring(0,7); // YYYY-MM format
     months.forEach(m=>{
       if(!isAct(t,m))return;
       const p=getPay(t,m);
       if(!p||p.paid===0)return;
+
+      // Skip first month (move-in month) - it's always "on time"
+      if(m===moveInMonth){
+        total++;
+        onTime++;
+        return;
+      }
+
       total++;
       const dueDay=getTenantDueDay(t,m);
       const [y,mo]=m.split('-').map(Number);
@@ -1171,6 +1180,7 @@ function showLateHistory(name,room){
     t.pays.forEach(p=>allMonths.add(p.month));
   });
   const months=Array.from(allMonths).sort();
+  const moveInMonth=tenant.moveIn.substring(0,7); // YYYY-MM format
 
   // Build payment history
   const history=[];
@@ -1182,7 +1192,9 @@ function showLateHistory(name,room){
     const dueDay=getTenantDueDay(tenant,m);
     const [y,mo]=m.split('-').map(Number);
     const dueDate=`${y}-${String(mo).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
-    const isLate=p.date>dueDate;
+
+    // First month (move-in) is always on time
+    const isLate=(m!==moveInMonth)&&(p.date>dueDate);
 
     let daysLate=0;
     if(isLate){
@@ -1196,7 +1208,8 @@ function showLateHistory(name,room){
       dueDate,
       paidDate:p.date,
       isLate,
-      daysLate
+      daysLate,
+      isMoveIn:m===moveInMonth
     });
   });
 
@@ -1214,9 +1227,12 @@ function showLateHistory(name,room){
   document.getElementById('lateHistoryList').innerHTML=history.length?history.map(h=>`
     <div class="history-item ${h.isLate?'late':'ontime'}">
       <div>
-        <div class="history-month">${mlab(h.month)}</div>
+        <div class="history-month">
+          ${mlab(h.month)}
+          ${h.isMoveIn?' <span style="font-size:11px;color:var(--faint);font-weight:400">(חודש כניסה)</span>':''}
+        </div>
         <div class="history-date">
-          יעד: ${fmtD(h.dueDate)} · שולם: ${fmtD(h.paidDate)}
+          ${h.isMoveIn?'תאריך כניסה':'יעד'}: ${fmtD(h.dueDate)} · שולם: ${fmtD(h.paidDate)}
           ${h.isLate?` · איחור ${h.daysLate} ${h.daysLate===1?'יום':'ימים'}`:''}
         </div>
       </div>
