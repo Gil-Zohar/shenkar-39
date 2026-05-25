@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>שנקר 39 · ניהול דיירים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F5F0E6; --bg-deep:#EBE4D5; --surface:#FFF;
+  --ink:#14130F; --soft:#5B554C; --faint:#94897A;
+  --line:#E0D8C7; --line-s:#EDE5D4;
+  --accent:#1F4D3C; --accent-d:#143025; --accent-soft:#E0EBE2;
+  --gold:#A88A3F; --gold-s:#F5EBD2;
+  --warn:#B0432D; --warn-s:#F4E0D9;
+  --good:#2D6A4F;
+  --sh:0 4px 16px rgba(20,19,15,.07),0 1px 3px rgba(20,19,15,.04);
+  --sh-lg:0 8px 40px rgba(20,19,15,.12),0 2px 8px rgba(20,19,15,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  background:var(--bg);color:var(--ink);font-family:'Heebo',sans-serif;
+  min-height:100vh;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(circle at 10% 5%,rgba(31,77,60,.045) 0%,transparent 45%),
+    radial-gradient(circle at 90% 95%,rgba(168,138,63,.04) 0%,transparent 45%);
+}
+
+/* TOPBAR */
+.topbar{border-bottom:1px solid var(--line);background:rgba(245,240,230,.9);backdrop-filter:blur(14px);position:sticky;top:0;z-index:50}
+.ti{max-width:1360px;margin:0 auto;padding:15px 36px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:12px}
+.bmark{width:34px;height:34px;background:var(--accent);color:var(--bg);display:grid;place-items:center;font-family:'Frank Ruhl Libre',serif;font-size:17px;font-weight:700}
+.bname{font-family:'Frank Ruhl Libre',serif;font-size:19px;font-weight:700}
+.bsub{font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--faint);margin-top:1px}
+
+/* PAGE */
+.page{max-width:1360px;margin:0 auto;padding:36px 36px 80px}
+
+/* MONTH NAV */
+.mnav-wrap{display:flex;justify-content:center;margin-bottom:36px}
+.mnav{display:flex;align-items:stretch;border:1px solid var(--line);background:var(--surface);direction:ltr}
+.mb{font-family:inherit;background:none;border:none;cursor:pointer;padding:12px 22px;color:var(--soft);font-size:22px;line-height:1;transition:background .15s,color .15s;display:flex;align-items:center}
+.mb:hover{background:var(--bg-deep);color:var(--ink)}
+.ml{padding:12px 52px;direction:rtl;font-family:'Frank Ruhl Libre',serif;font-size:24px;font-weight:700;letter-spacing:-.01em;border-inline:1px solid var(--line);min-width:220px;text-align:center;line-height:1.2}
+.ml .yr{color:var(--faint);font-weight:400;font-size:16px;margin-right:8px}
+.ml .now{display:block;font-family:'Heebo',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-top:3px}
+
+/* KPIS */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:44px}
+.kpi{background:var(--surface);padding:22px 24px 26px}
+.kpi.feat{background:var(--accent);color:#F5F0E6}
+.kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:var(--faint);margin-bottom:12px}
+.kpi.feat .kpi-l{color:rgba(245,240,230,.5)}
+.kpi-v{font-family:'Frank Ruhl Libre',serif;font-size:36px;font-weight:700;line-height:1;letter-spacing:-.025em;font-feature-settings:"tnum"}
+.kpi-v .c{font-size:18px;font-weight:400;color:var(--faint);margin-inline-end:3px}
+.kpi.feat .kpi-v .c{color:rgba(245,240,230,.45)}
+.kpi-s{margin-top:10px;font-size:12px;color:var(--soft)}
+.kpi.feat .kpi-s{color:rgba(245,240,230,.55)}
+.kbar{margin-top:14px;height:3px;background:var(--line-s);overflow:hidden}
+.kpi.feat .kbar{background:rgba(245,240,230,.15)}
+.kbar-f{height:100%;background:var(--accent);transition:width .6s cubic-bezier(.2,0,0,1)}
+.kpi.feat .kbar-f{background:var(--gold)}
+
+/* SECTION */
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:12px}
+.sh h2{font-family:'Frank Ruhl Libre',serif;font-size:26px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
+.badge{font-family:'Heebo',sans-serif;font-size:11px;font-weight:500;color:var(--faint);background:var(--bg-deep);padding:2px 9px;border-radius:999px}
+
+/* BUTTONS */
+.btn{font-family:inherit;font-size:12px;font-weight:500;padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--bg-deep)}
+.btn-p{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn-p:hover{background:var(--accent-d);border-color:var(--accent-d)}
+.btn-g{background:transparent;border-color:transparent;color:var(--soft);padding:5px 8px}
+.btn-g:hover{background:var(--bg-deep);color:var(--ink)}
+.ico{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bicon{width:28px;height:28px;padding:0;display:grid;place-items:center}
+
+/* MONTHLY TABLE */
+.mt{background:var(--surface);border:1px solid var(--line);margin-bottom:44px}
+.mth,.mtr{display:grid;grid-template-columns:48px 1.7fr .95fr 1fr .85fr 1.1fr .85fr 76px;align-items:center;border-bottom:1px solid var(--line-s)}
+.mth{background:var(--bg-deep)}
+.mth>div{padding:11px 13px;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--soft)}
+.mtr>div{padding:15px 13px}
+.mtr:last-child{border-bottom:none}
+.mtr:not(.inact):hover{background:#FBF8F0}
+.mtr.inact{opacity:.38;pointer-events:none}
+
+.rnum{font-family:'Frank Ruhl Libre',serif;font-size:19px;font-weight:700;color:var(--accent);text-align:center}
+.tc{display:flex;align-items:center;gap:10px}
+.av{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:13px;flex-shrink:0}
+.av.dim{background:var(--bg-deep);color:var(--faint)}
+.tn{font-weight:500;font-size:14px}
+.ms{font-size:10px;color:var(--faint);margin-top:2px}
+.mo{font-feature-settings:"tnum";font-weight:500;font-size:14px}
+.mo-due{color:var(--ink)}.mo-paid{color:var(--good)}
+.mo-of{color:var(--faint);font-weight:400;font-size:12px;margin-inline-start:3px}
+.mo-rem{color:var(--warn);font-weight:600;font-size:14px}
+.mo-rem.z{color:var(--faint);font-weight:400}
+.pd{font-size:12px;color:var(--soft);font-feature-settings:"tnum"}
+
+.sb{display:inline-flex;align-items:center;gap:5px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 9px;font-weight:600;white-space:nowrap}
+.sb::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.sb.paid{color:var(--good);background:var(--accent-soft)}
+.sb.partial{color:var(--gold);background:var(--gold-s)}
+.sb.unpaid{color:var(--warn);background:var(--warn-s)}
+.sb.inactive{color:var(--faint);background:var(--bg-deep)}
+.ra{display:flex;gap:2px}
+
+/* DEPOSIT */
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:44px}
+.dc{background:var(--surface);padding:18px 20px;cursor:pointer;transition:background .15s}
+.dc:hover{background:#FBF8F0}
+.dc-room{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:3px}
+.dc-name{font-size:15px;font-weight:500;margin-bottom:13px}
+.dbw{height:5px;background:var(--line-s);margin-bottom:9px}
+.dbf{height:100%;background:var(--accent);transition:width .5s}
+.dbf.part{background:var(--gold)}
+.da{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.dp{font-family:'Frank Ruhl Libre',serif;font-size:20px;font-weight:700;font-feature-settings:"tnum"}
+.dt{font-size:12px;color:var(--faint)}
+.ds{font-size:11px}
+.ds.ok{color:var(--good)}.ds.part{color:var(--gold)}.ds.none{color:var(--faint)}
+
+/* PARKING */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:44px}
+.pc{background:var(--surface);padding:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:background .15s}
+.pc:hover{background:#FBF8F0}
+.pico{width:38px;height:38px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;border-radius:6px;flex-shrink:0}
+.pname{font-size:15px;font-weight:500}
+.pmeta{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.12em;margin-top:2px}
+.pamt{font-family:'Frank Ruhl Libre',serif;font-size:24px;font-weight:700;color:var(--accent);font-feature-settings:"tnum"}
+
+/* TENANT MGMT */
+.tmg{background:var(--surface);border:1px solid var(--line);margin-bottom:44px}
+.tmr{display:grid;grid-template-columns:48px 1.4fr 1fr 1fr 1fr 1.1fr 1fr 56px;align-items:center;border-bottom:1px solid var(--line-s);transition:background .15s}
+.tmr.th{background:var(--bg-deep)}
+.tmr.th>div{padding:11px 13px;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--soft)}
+.tmr:not(.th):hover{background:#FBF8F0}
+.tmr:not(.th)>div{padding:14px 13px}
+.tmr:last-child{border-bottom:none}
+
+/* SEP */
+.sep{text-align:center;margin:36px 0;color:var(--line);font-family:'Frank Ruhl Libre',serif;font-size:18px;letter-spacing:.8em;user-select:none}
+
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(20,19,15,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.mbg.open{display:flex}
+.modal{background:var(--surface);width:100%;max-width:500px;box-shadow:var(--sh-lg);max-height:90vh;overflow-y:auto}
+.mhd{padding:22px 26px 16px;border-bottom:1px solid var(--line-s);display:flex;align-items:center;justify-content:space-between}
+.mhd h3{font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:700}
+.mbody{padding:20px 26px 26px}
+.mfoot{padding:16px 26px;border-top:1px solid var(--line-s);display:flex;gap:8px;background:var(--bg);flex-wrap:wrap}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--soft);margin-bottom:6px;font-weight:500}
+.field input,.field select{width:100%;font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);transition:border-color .15s;direction:rtl}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fn{font-size:11px;color:var(--faint);margin-top:4px}
+.iblock{background:var(--bg-deep);padding:12px 14px;font-size:13px;color:var(--soft);margin-bottom:14px;border-right:3px solid var(--accent)}
+.iblock strong{color:var(--ink)}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--accent);color:var(--bg);padding:10px 18px;font-size:13px;z-index:200;opacity:0;transition:all .3s cubic-bezier(.2,0,0,1);box-shadow:var(--sh-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.empty{padding:44px;text-align:center;color:var(--faint);font-style:italic;font-family:'Frank Ruhl Libre',serif}
+
+/* RESPONSIVE */
+@media(max-width:1024px){.page{padding:24px 20px 60px}.ti{padding:14px 20px}.kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){
+  .kpis{grid-template-columns:1fr}
+  .mth{display:none}
+  .mtr{grid-template-columns:1fr 1fr;padding:14px;gap:6px 12px}
+  .mtr>div{padding:3px 0}
+  .mtr>div::before{content:attr(data-label);display:block;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);margin-bottom:3px}
+  .tmr{grid-template-columns:1fr 1fr}
+  .tmr.th{display:none}
+}
+</style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<!-- Firebase loading overlay -->
+<div id="fbLoading" style="position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:999;">
+  <div style="text-align:center">
+    <div style="font-family:'Frank Ruhl Libre',serif;font-size:42px;font-weight:900;color:var(--accent);margin-bottom:10px">שנקר 39</div>
+    <div style="font-size:13px;color:var(--faint);letter-spacing:.08em">מתחבר לבסיס הנתונים...</div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="ti">
+    <div class="brand">
+      <div class="bmark">ש</div>
+      <div><div class="bname">שנקר 39</div><div class="bsub">ניהול דיירים</div></div>
+    </div>
+    <button class="btn btn-p" onclick="openTenantModal()">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> דייר חדש
+    </button>
+    <div title="סטטוס חיבור" style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--faint)">
+      <div id="connDot" style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:background .4s"></div>
+    </div>
+  </div>
+</div>
+
+<main class="page">
+
+  <div class="mnav-wrap">
+    <div class="mnav">
+      <button class="mb" onclick="changeMonth(-1)" title="חודש קודם">&#8249; חודש קודם</button>
+      <div class="ml" id="monthLabel">—</div>
+      <button class="mb" onclick="changeMonth(1)" title="חודש הבא">חודש הבא &#8250;</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi feat">
+      <div class="kpi-l">פוטנציאל חודשי</div>
+      <div class="kpi-v"><span class="c">₪</span><span id="kPot">0</span></div>
+      <div class="kpi-s" id="kPotS"></div>
+      <div class="kbar"><div class="kbar-f" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">נגבה</div>
+      <div class="kpi-v"><span class="c">₪</span><span id="kColl">0</span></div>
+      <div class="kpi-s"><span id="kCollP">0%</span> מהפוטנציאל</div>
+      <div class="kbar"><div class="kbar-f" id="kCollB" style="width:0%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">יתרה לגבייה</div>
+      <div class="kpi-v"><span class="c">₪</span><span id="kRem">0</span></div>
+      <div class="kpi-s"><span id="kRemN">0</span> פריטים עם יתרה</div>
+      <div class="kbar"><div class="kbar-f" id="kRemB" style="width:0%;background:var(--warn)"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">שיעור גבייה</div>
+      <div class="kpi-v"><span id="kRate">0</span><span style="font-size:18px;font-weight:400;color:var(--faint)">%</span></div>
+      <div class="kpi-s"><span id="kPF">0</span> / <span id="kAct">0</span> שילמו במלואם</div>
+      <div class="kbar"><div class="kbar-f" id="kRateB" style="width:0%;background:var(--gold)"></div></div>
+    </div>
+  </div>
+
+  <!-- Late Payments Alert -->
+  <section id="lateSection" style="display:none;margin-bottom:32px">
+    <div class="sh">
+      <h2 style="color:var(--warn)">⚠️ איחורים בתשלום</h2>
+      <span class="badge" id="lateBadge" style="background:var(--warn-s);color:var(--warn)">0</span>
+    </div>
+    <div style="background:var(--warn-s);border:1px solid var(--warn);border-right:4px solid var(--warn);padding:20px 24px">
+      <div id="lateList"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sh">
+      <h2>תשלומי שכר דירה</h2>
+      <button class="btn" onclick="markAllPaid()">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> סמן כולם כשולם
+      </button>
+    </div>
+    <div class="mt">
+      <div class="mth">
+        <div>חדר</div><div>שם הדייר</div><div>שכ״ד</div>
+        <div>שולם</div><div>נותר</div><div>תאריך תשלום</div>
+        <div>סטטוס</div><div></div>
+      </div>
+      <div id="mList"></div>
+    </div>
+  </section>
+
+  <div class="sep">· · ·</div>
+
+  <section>
+    <div class="sh"><h2>פיקדונות</h2></div>
+    <div class="dgrid" id="dGrid"></div>
+  </section>
+
+  <div class="sep">· · ·</div>
+
+  <section>
+    <div class="sh">
+      <h2>חניות <span class="badge" id="pkC">0</span></h2>
+      <button class="btn btn-p" onclick="openParkModal()">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> הוסף
+      </button>
+    </div>
+    <div class="pgrid" id="pList"></div>
+  </section>
+
+  <div class="sep">· · ·</div>
+
+  <section>
+    <div class="sh">
+      <h2>ניהול דיירים <span class="badge" id="tC">0</span></h2>
+      <button class="btn btn-p" onclick="openTenantModal()">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> הוסף דייר
+      </button>
+    </div>
+    <div class="tmg">
+      <div class="tmr th">
+        <div>חדר</div><div>שם</div><div>טלפון</div><div>שכ״ד</div>
+        <div>תאריך כניסה</div><div>פיקדון ששולם</div><div>פיקדון נדרש</div><div></div>
+      </div>
+      <div id="tList"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- PAYMENT MODAL -->
+<div class="mbg" id="payModal" onclick="if(event.target===this)closeM('payModal')">
+  <div class="modal">
+    <div class="mhd"><h3 id="payT">רישום תשלום</h3><button class="btn btn-g bicon" onclick="closeM('payModal')">✕</button></div>
+    <div class="mbody">
+      <input type="hidden" id="pmTid"><input type="hidden" id="pmMo">
+      <div class="iblock" id="pmInfo"></div>
+      <div class="fr">
+        <div class="field"><label>סכום ששולם (₪)</label><input type="number" id="pmAmt" placeholder="0"></div>
+        <div class="field"><label>תאריך תשלום</label><input type="date" id="pmDate"></div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-p" onclick="savePayment()">שמירה</button>
+      <button class="btn" onclick="closeM('payModal')">ביטול</button>
+      <button class="btn btn-g" onclick="setFull()" style="margin-inline-start:auto">שולם במלואו ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- TENANT MODAL -->
+<div class="mbg" id="tenantModal" onclick="if(event.target===this)closeM('tenantModal')">
+  <div class="modal">
+    <div class="mhd"><h3 id="tModalT">דייר חדש</h3><button class="btn btn-g bicon" onclick="closeM('tenantModal')">✕</button></div>
+    <div class="mbody">
+      <input type="hidden" id="tnId">
+      <div class="fr">
+        <div class="field"><label>מס׳ חדר</label><input type="text" id="tnRoom" placeholder="1"></div>
+        <div class="field"><label>שם הדייר</label><input type="text" id="tnName" placeholder="שם מלא"></div>
+      </div>
+      <div class="fr">
+        <div class="field"><label>טלפון</label><input type="text" id="tnPhone" placeholder="050-1234567"></div>
+        <div class="field"><label>תאריך כניסה</label><input type="date" id="tnMoveIn"></div>
+      </div>
+      <div class="fr">
+        <div class="field"><label>שכ״ד חודשי (₪)</label><input type="number" id="tnRent" placeholder="3500"></div>
+        <div class="field"><label>פיקדון נדרש (₪)</label><input type="number" id="tnDT" placeholder="0"></div>
+      </div>
+      <div class="fr">
+        <div class="field"><label>פיקדון ששולם (₪)</label><input type="number" id="tnDP" placeholder="0"></div>
+      </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-p" onclick="saveTenant()">שמירה</button>
+      <button class="btn" onclick="closeM('tenantModal')">ביטול</button>
+      <button class="btn btn-g" id="tnDel" onclick="delTenant()" style="margin-inline-start:auto;color:var(--warn);display:none">מחיקה</button>
+    </div>
+  </div>
+</div>
+
+<!-- PARKING MODAL -->
+<div class="mbg" id="parkModal" onclick="if(event.target===this)closeM('parkModal')">
+  <div class="modal">
+    <div class="mhd"><h3 id="pkT">חניה</h3><button class="btn btn-g bicon" onclick="closeM('parkModal')">✕</button></div>
+    <div class="mbody">
+      <input type="hidden" id="pkId">
+      <div class="field"><label>שם השוכר</label><input type="text" id="pkName"></div>
+      <div class="fr">
+      <div class="field"><label>טלפון</label><input type="text" id="pkPhone" placeholder="050-1234567"></div>
+      <div class="field"><label>סכום חודשי (₪)</label><input type="number" id="pkAmt"></div>
+    </div>
+    <div class="fr">
+      <div class="field"><label>יום תשלום</label><input type="number" id="pkDay" min="1" max="31"></div>
+    </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-p" onclick="saveParking()">שמירה</button>
+      <button class="btn" onclick="closeM('parkModal')">ביטול</button>
+      <button class="btn btn-g" id="pkDel" onclick="delParking()" style="margin-inline-start:auto;color:var(--warn);display:none">מחיקה</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const HM=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const KEY='shenkar39_v7'; // kept for reference only — not used
+const NOW=new Date();
+const NOW_M=`${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}`;
+
+/* ── SEED ── */
+function mkPays(from,to,rent,day){
+  const r=[];let[y,m]=from.split('-').map(Number);const[ey,em]=to.split('-').map(Number);
+  while(y<ey||(y===ey&&m<=em)){
+    const ms=`${y}-${String(m).padStart(2,'0')}`;
+    r.push({month:ms,paid:rent,date:`${ms}-${String(day).padStart(2,'0')}`});
+    m++;if(m>12){m=1;y++;}
+  }
+  return r;
+}
+
+const SEED={
+  tenants:[
+    {id:'t1',room:'1',name:'אמיר',phone:'',rent:3500,moveIn:'2026-05-01',dT:3500,dP:3500,
+     pays:[{month:'2026-05',paid:3500,date:'2026-05-01'}]},
+    {id:'t2',room:'2',name:'טופז',phone:'',rent:3000,moveIn:'2026-05-01',dT:0,dP:0,
+     pays:[{month:'2026-05',paid:3000,date:'2026-05-01'}]},
+    {id:'t3',room:'3',name:'לידיה',phone:'',rent:3300,moveIn:'2026-03-13',dT:3300,dP:2000,
+     pays:[
+       {month:'2026-04',paid:3300,date:'2026-04-13'},
+       {month:'2026-05',paid:3300,date:'2026-05-13'}
+     ]},
+    {id:'t4',room:'4',name:'אבי',phone:'',rent:3500,moveIn:'2026-04-26',dT:0,dP:0,
+     pays:[{month:'2026-04',paid:3500,date:'2026-04-26'}]},
+    {id:'t5',room:'5',name:'שי',phone:'',rent:3000,moveIn:'2025-11-22',dT:3000,dP:3000,
+     pays:mkPays('2025-11','2026-04',3000,22)},
+    {id:'t6',room:'6',name:'אפי',phone:'',rent:3200,moveIn:'2026-05-01',dT:3200,dP:3200,
+     pays:[{month:'2026-05',paid:3200,date:'2026-05-01'}]},
+    {id:'t7',room:'7',name:'נגינה',phone:'',rent:3500,moveIn:'2026-05-01',dT:3500,dP:500,
+     pays:[{month:'2026-05',paid:3500,date:'2026-05-01'}]},
+  ],
+  parking:[
+    {id:'p1',name:'ויטה',phone:'',amt:400,day:20,pays:[]},
+    {id:'p2',name:'טופז',phone:'',amt:350,day:1,pays:[]},
+  ]
+};
+
+/* ── STATE ── */
+// ╔══════════════════════════════════════════════════════════╗
+// ║  הגדרות Firebase — מלא כאן את הפרטים לאחר שיצרת פרויקט ║
+// ╚══════════════════════════════════════════════════════════╝
+const FB_CONFIG = {
+  apiKey:            "AIzaSyATmRi0v1iJ5YRRwK36vzRgRzQ5fKv_B6s",
+  authDomain:        "shenkar39-a8fc7.firebaseapp.com",
+  databaseURL:       "https://shenkar39-a8fc7-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "shenkar39-a8fc7",
+  storageBucket:     "shenkar39-a8fc7.appspot.com",
+  messagingSenderId: "1073868425467",
+  appId:             "1:1073868425467:web:3aa61d35918e2be731485e"
+};
+// ═══════════════════════════════════════════════════════════
+
+firebase.initializeApp(FB_CONFIG);
+const db = firebase.database();
+const dbRef = db.ref('shenkar39');
+
+let S = null;        // loaded from Firebase
+let _lastJson = '';  // prevents re-render on own writes
+
+// Listen: fires on load + every remote change
+dbRef.on('value', snapshot => {
+  const incoming = snapshot.val();
+  const json = JSON.stringify(incoming);
+  if (json === _lastJson) return; // our own write echoed back — skip
+  _lastJson = json;
+  if (incoming) {
+    S = incoming;
+  } else {
+    // First ever run — seed the database
+    S = JSON.parse(JSON.stringify(SEED));
+    _lastJson = JSON.stringify(S);
+    dbRef.set(S);
+  }
+  hideLoading();
+  render();
+});
+
+// Connection indicator
+db.ref('.info/connected').on('value', snap => {
+  const el = document.getElementById('connDot');
+  if (el) el.style.background = snap.val() ? '#4CAF50' : '#F44336';
+});
+
+const save = () => {
+  _lastJson = JSON.stringify(S);
+  dbRef.set(S);
+};
+
+/* ── HELPERS ── */
+const fmt=n=>new Intl.NumberFormat('he-IL').format(Math.round(n||0));
+const fmtD=d=>{if(!d)return'—';const[y,m,day]=d.split('-');return`${+day}.${+m}.${y}`;};
+const ini=n=>(n||'').trim()[0]||'?';
+const mlab=m=>{const[y,mo]=m.split('-');return`${HM[+mo-1]} ${y}`;};
+const isAct=(t,m)=>{const[y,mo]=m.split('-').map(Number);const d=new Date(t.moveIn);return d.getFullYear()<y||(d.getFullYear()===y&&d.getMonth()+1<=mo);};
+const getPay=(t,m)=>t.pays.find(p=>p.month===m)||null;
+const getStatus=(t,m)=>{
+  if(!isAct(t,m))return'inactive';
+  const p=getPay(t,m);const paid=p?p.paid:0;
+  if(paid>=t.rent)return'paid';if(paid>0)return'partial';return'unpaid';
+};
+const getRem=(t,m)=>{const p=getPay(t,m);return Math.max(0,t.rent-(p?p.paid:0));};
+const getParkPay=(p,m)=>p.pays?.find(x=>x.month===m)||null;
+const getParkStatus=(p,m)=>{const pay=getParkPay(p,m);const paid=pay?pay.paid:0; if(paid>=p.amt)return'paid'; if(paid>0)return'partial'; return'unpaid';};
+const stxt=s=>({paid:'שולם',partial:'חלקי',unpaid:'לא שולם',inactive:'לא פעיל'}[s]);
+
+const getTenantDueDay=(t,month)=>{
+  const day=new Date(t.moveIn).getDate()||1;
+  const [y,m]=month.split('-').map(Number);
+  const lastDay=new Date(y,m,0).getDate();
+  return Math.min(day,lastDay);
+};
+
+function checkLatePayments(){
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,10);
+  const lateItems = [];
+
+  // Check tenants
+  S.tenants.forEach(t=>{
+    if(!isAct(t,sel)) return;
+    const rem = getRem(t,sel);
+    if(rem===0) return;
+
+    const dueDay = getTenantDueDay(t,sel);
+    const [y,m]=sel.split('-').map(Number);
+    const dueDate = `${y}-${String(m).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
+
+    if(dueDate < todayStr){
+      const daysLate = Math.floor((new Date(todayStr) - new Date(dueDate)) / (1000*60*60*24));
+      lateItems.push({
+        type:'tenant',
+        name:t.name,
+        room:t.room,
+        amount:rem,
+        dueDate:dueDate,
+        daysLate:daysLate
+      });
+    }
+  });
+
+  // Check parking
+  S.parking.forEach(p=>{
+    const pay=getParkPay(p,sel);
+    const paid=pay?pay.paid:0;
+    const rem = Math.max(0,p.amt-paid);
+    if(rem===0) return;
+
+    const [y,m]=sel.split('-').map(Number);
+    const dueDay = Math.min(p.day||1,new Date(y,m,0).getDate());
+    const dueDate = `${y}-${String(m).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
+
+    if(dueDate < todayStr){
+      const daysLate = Math.floor((new Date(todayStr) - new Date(dueDate)) / (1000*60*60*24));
+      lateItems.push({
+        type:'parking',
+        name:p.name,
+        amount:rem,
+        dueDate:dueDate,
+        daysLate:daysLate
+      });
+    }
+  });
+
+  // Update UI
+  const section = document.getElementById('lateSection');
+  const badge = document.getElementById('lateBadge');
+  const list = document.getElementById('lateList');
+
+  if(lateItems.length === 0){
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  badge.textContent = lateItems.length;
+
+  list.innerHTML = lateItems.map((item,i)=>{
+    const icon = item.type==='tenant'?'👤':'🅿️';
+    const isLast = i===lateItems.length-1;
+    return`<div style="padding:14px 0${isLast?'':';border-bottom:1px solid rgba(176,67,45,.2)'};display:flex;justify-content:space-between;align-items:center;gap:16px">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:15px;margin-bottom:4px">${icon} ${item.name}${item.room?` · חדר ${item.room}`:''}</div>
+        <div style="font-size:12px;color:var(--warn);opacity:.85">⏰ באיחור <strong>${item.daysLate}</strong> ${item.daysLate===1?'יום':'ימים'} · יעד: ${fmtD(item.dueDate)}</div>
+      </div>
+      <div style="font-family:'Frank Ruhl Libre',serif;font-size:24px;font-weight:700;color:var(--warn);white-space:nowrap">₪${fmt(item.amount)}</div>
+    </div>`;
+  }).join('');
+}
+
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2200);}
+
+/* ── MONTH NAV ── */
+function changeMonth(d){
+  let[y,m]=sel.split('-').map(Number);m+=d;
+  if(m<1){m=12;y--;}if(m>12){m=1;y++;}
+  sel=`${y}-${String(m).padStart(2,'0')}`;render();
+}
+
+/* ── RENDER ── */
+function render(){
+  const isCur=sel===NOW_M;
+  const[sy,sm]=sel.split('-');
+  document.getElementById('monthLabel').innerHTML=
+    HM[+sm-1]+`<span class="yr">${sy}</span>`+(isCur?`<span class="now">חודש נוכחי</span>`:'');
+
+  const active=S.tenants.filter(t=>isAct(t,sel));
+  const parkPot=S.parking.reduce((s,p)=>s+p.amt,0);
+  const pot=active.reduce((s,t)=>s+t.rent,0)+parkPot;
+
+  // Collected: tenants + parking
+  const collTenants=active.reduce((s,t)=>{const p=getPay(t,sel);return s+(p?p.paid:0);},0);
+  const collParking=S.parking.reduce((s,p)=>{const pay=getParkPay(p,sel);return s+(pay?pay.paid:0);},0);
+  const coll=collTenants+collParking;
+
+  // Remaining: tenants + parking
+  const remTenants=active.reduce((s,t)=>s+getRem(t,sel),0);
+  const remParking=S.parking.reduce((s,p)=>{const pay=getParkPay(p,sel);const paid=pay?pay.paid:0;return s+Math.max(0,p.amt-paid);},0);
+  const rem=remTenants+remParking;
+
+  // Payment rate: tenants + parking fully paid
+  const nPaidTenants=active.filter(t=>getStatus(t,sel)==='paid').length;
+  const nPaidParking=S.parking.filter(p=>getParkStatus(p,sel)==='paid').length;
+  const nPaid=nPaidTenants+nPaidParking;
+  const totalCount=active.length+S.parking.length;
+
+  const cp=pot>0?Math.min(100,(coll/pot)*100):0;
+  const rp=totalCount>0?(nPaid/totalCount)*100:0;
+
+  document.getElementById('kPot').textContent=fmt(pot);
+  document.getElementById('kPotS').textContent=`${active.length} דיירים + ${S.parking.length} חניות`;
+  document.getElementById('kColl').textContent=fmt(coll);
+  document.getElementById('kCollP').textContent=Math.round(cp)+'%';
+  document.getElementById('kCollB').style.width=cp+'%';
+  document.getElementById('kRem').textContent=fmt(rem);
+  const nWithRem=active.filter(t=>getRem(t,sel)>0).length + S.parking.filter(p=>{const pay=getParkPay(p,sel);const paid=pay?pay.paid:0;return p.amt-paid>0;}).length;
+  document.getElementById('kRemN').textContent=nWithRem;
+  document.getElementById('kRemB').style.width=(pot>0?Math.min(100,(rem/pot)*100):0)+'%';
+  document.getElementById('kRate').textContent=Math.round(rp);
+  document.getElementById('kPF').textContent=nPaid;
+  document.getElementById('kAct').textContent=totalCount;
+  document.getElementById('kRateB').style.width=rp+'%';
+
+  /* Monthly list */
+  const sorted=[...S.tenants].sort((a,b)=>+a.room-+b.room);
+  document.getElementById('mList').innerHTML=sorted.length?sorted.map(t=>{
+    const st=getStatus(t,sel);const p=getPay(t,sel);const paid=p?p.paid:0;const rem=getRem(t,sel);const act=st!=='inactive';
+    return`<div class="mtr${act?'':' inact'}">
+      <div data-label="חדר"><div class="rnum">${t.room}</div></div>
+      <div data-label="שם"><div class="tc"><div class="av${act?'':' dim'}">${ini(t.name)}</div><div><div class="tn">${t.name}</div><div class="ms">מאז ${fmtD(t.moveIn)}</div></div></div></div>
+      <div class="mo mo-due" data-label="שכ״ד">${act?'₪'+fmt(t.rent):'—'}</div>
+      <div data-label="שולם">${act?`<span class="mo mo-paid">₪${fmt(paid)}</span>${paid>0&&paid<t.rent?`<span class="mo-of">/ ₪${fmt(t.rent)}</span>`:''}` :'—'}</div>
+      <div class="mo-rem${rem===0?' z':''}" data-label="נותר">${act?(rem>0?'₪'+fmt(rem):'—'):'—'}</div>
+      <div class="pd" data-label="תאריך">${act?(p?fmtD(p.date):'—'):'—'}</div>
+      <div data-label="סטטוס"><span class="sb ${st}">${stxt(st)}</span></div>
+      <div class="ra">${act?`
+        <button class="btn btn-g bicon" title="רישום תשלום" onclick="openPayM('${t.id}')"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+        <button class="btn btn-g bicon" title="שולם במלואו" onclick="qPay('${t.id}')"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>
+        ${paid>0?`<button class="btn btn-g bicon" style="color:var(--warn)" title="בטל תשלום" onclick="unmarkPaid('${t.id}')"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`:''}`:''}</div>
+    </div>`;
+  }).join(''):'<div class="empty">אין דיירים עדיין</div>';
+
+  /* Deposits */
+  const wDep=S.tenants.filter(t=>t.dT>0);
+  document.getElementById('dGrid').innerHTML=wDep.length?wDep.map(t=>{
+    const pct=t.dT>0?Math.min(100,(t.dP/t.dT)*100):0;const rem=Math.max(0,t.dT-t.dP);
+    const cls=pct>=100?'ok':pct>0?'part':'none';const bcls=pct>=100?'':'part';
+    return`<div class="dc" onclick="openTenantModal('${t.id}')">
+      <div class="dc-room">חדר ${t.room}</div><div class="dc-name">${t.name}</div>
+      <div class="dbw"><div class="dbf ${bcls}" style="width:${pct}%"></div></div>
+      <div class="da"><div class="dp">₪${fmt(t.dP)}</div><div class="dt">/ ₪${fmt(t.dT)}</div></div>
+      <div class="ds ${cls}">${rem===0?'✓ פיקדון שלם':`נותר: ₪${fmt(rem)}`}</div>
+    </div>`;
+  }).join(''):'<div class="empty" style="grid-column:1/-1">אין פיקדונות</div>';
+
+  /* Parking */
+  document.getElementById('pkC').textContent=S.parking.length;
+  document.getElementById('pList').innerHTML=S.parking.map(p=>{
+    const pay=getParkPay(p,sel);const st=getParkStatus(p,sel);const label=pay?`שולם ${fmtD(pay.date)}`:'לא שולם';
+    const paid=pay?pay.paid:0;
+    return `
+    <div class="pc" onclick="openParkModal('${p.id}')">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="pico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg></div>
+        <div><div class="pname">${p.name}</div><div class="pmeta">ב-${p.day} לחודש</div><div class="pmeta">${label}</div><div class="pmeta"><span class="sb ${st}">${stxt(st)}</span></div><div class="pmeta">טלפון: ${p.phone||'—'}</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="pamt">₪${fmt(p.amt)}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-g" onclick="event.stopPropagation();qPayParking('${p.id}')">שולם</button>
+          ${paid>0?`<button class="btn btn-g" style="color:var(--warn)" onclick="event.stopPropagation();unmarkPaidParking('${p.id}')">בטל</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty" style="grid-column:1/-1">אין חניות</div>';
+
+  /* Tenant mgmt */
+  document.getElementById('tC').textContent=S.tenants.length;
+  document.getElementById('tList').innerHTML=sorted.map(t=>`
+    <div class="tmr">
+      <div><div class="rnum" style="font-size:16px">${t.room}</div></div>
+      <div><div style="font-weight:500;font-size:14px">${t.name}</div></div>
+      <div style="font-size:13px;color:var(--soft)">${t.phone||'—'}</div>
+      <div style="font-feature-settings:'tnum';font-weight:500;font-size:14px">₪${fmt(t.rent)}</div>
+      <div style="font-size:13px;color:var(--soft)">${fmtD(t.moveIn)}</div>
+      <div style="font-size:13px;color:var(--soft)">₪${fmt(t.dP)}</div>
+      <div style="font-size:13px;color:var(--soft)">₪${fmt(t.dT)}</div>
+      <div><button class="btn btn-g bicon" onclick="openTenantModal('${t.id}')"><svg class="ico" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div>
+    </div>`).join('')||'<div class="empty">אין דיירים</div>';
+
+  checkLatePayments();
+  save();
+}
+
+/* ── PAYMENT MODAL ── */
+function openPayM(tid){
+  const t=S.tenants.find(x=>x.id===tid);if(!t)return;
+  const p=getPay(t,sel);
+  document.getElementById('pmTid').value=tid;
+  document.getElementById('pmMo').value=sel;
+  document.getElementById('payT').textContent=`${t.name} · ${mlab(sel)}`;
+  document.getElementById('pmInfo').innerHTML=`שכ״ד: <strong>₪${fmt(t.rent)}</strong> &nbsp;|&nbsp; שולם: <strong>₪${fmt(p?p.paid:0)}</strong> &nbsp;|&nbsp; נותר: <strong>₪${fmt(getRem(t,sel))}</strong>`;
+  document.getElementById('pmAmt').value=p?p.paid:'';
+  document.getElementById('pmDate').value=p?p.date:new Date().toISOString().slice(0,10);
+  document.getElementById('payModal').classList.add('open');
+}
+function setFull(){
+  const tid=document.getElementById('pmTid').value;
+  const t=S.tenants.find(x=>x.id===tid);if(!t)return;
+  document.getElementById('pmAmt').value=t.rent;
+  document.getElementById('pmDate').value=new Date().toISOString().slice(0,10);
+}
+function savePayment(){
+  const tid=document.getElementById('pmTid').value;
+  const m=document.getElementById('pmMo').value;
+  const amt=Number(document.getElementById('pmAmt').value)||0;
+  const date=document.getElementById('pmDate').value;
+  const t=S.tenants.find(x=>x.id===tid);if(!t)return;
+  const ex=t.pays.find(p=>p.month===m);
+  if(ex){ex.paid=amt;ex.date=date;}else{t.pays.push({month:m,paid:amt,date});}
+  closeM('payModal');toast('תשלום נרשם');render();
+}
+function qPay(tid){
+  const t=S.tenants.find(x=>x.id===tid);if(!t)return;
+  const today=new Date().toISOString().slice(0,10);
+  const ex=t.pays.find(p=>p.month===sel);
+  if(ex){ex.paid=t.rent;ex.date=today;}else{t.pays.push({month:sel,paid:t.rent,date:today});}
+  toast(`${t.name} סומן כשולם`);render();
+}
+function unmarkPaid(tid){
+  const t=S.tenants.find(x=>x.id===tid);if(!t)return;
+  if(!confirm(`לבטל את התשלום של ${t.name} עבור ${mlab(sel)}?`))return;
+  const ex=t.pays.find(p=>p.month===sel);
+  if(ex){ex.paid=0;ex.date='';}
+  toast(`התשלום של ${t.name} בוטל`);render();
+}
+function markAllPaid(){
+  const active=S.tenants.filter(t=>isAct(t,sel));
+  if(!confirm(`לסמן את ${active.length} הדיירים הפעילים כשולם ב${mlab(sel)}?`))return;
+  const today=new Date().toISOString().slice(0,10);
+  active.forEach(t=>{const ex=t.pays.find(p=>p.month===sel);if(ex){ex.paid=t.rent;ex.date=today;}else{t.pays.push({month:sel,paid:t.rent,date:today});}});
+  toast('כל הדיירים סומנו כשולם');render();
+}
+
+/* ── TENANT CRUD ── */
+function openTenantModal(id){
+  const del=document.getElementById('tnDel');
+  if(id){
+    const t=S.tenants.find(x=>x.id===id);if(!t)return;
+    document.getElementById('tModalT').textContent=`עריכה · ${t.name}`;
+    document.getElementById('tnId').value=t.id;
+    document.getElementById('tnRoom').value=t.room;
+    document.getElementById('tnName').value=t.name;
+    document.getElementById('tnPhone').value=t.phone||'';
+    document.getElementById('tnRent').value=t.rent;
+    document.getElementById('tnMoveIn').value=t.moveIn;
+    document.getElementById('tnDT').value=t.dT||0;
+    document.getElementById('tnDP').value=t.dP||0;
+    del.style.display='inline-flex';
+  }else{
+    document.getElementById('tModalT').textContent='דייר חדש';
+    document.getElementById('tnId').value='';
+    ['tnRoom','tnName','tnPhone','tnRent'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('tnMoveIn').value=new Date().toISOString().slice(0,10);
+    document.getElementById('tnDT').value='0';document.getElementById('tnDP').value='0';
+    del.style.display='none';
+  }
+  document.getElementById('tenantModal').classList.add('open');
+}
+function saveTenant(){
+  const id=document.getElementById('tnId').value;
+  const d={room:document.getElementById('tnRoom').value.trim(),name:document.getElementById('tnName').value.trim(),
+    phone:document.getElementById('tnPhone').value.trim(),rent:Number(document.getElementById('tnRent').value)||0,moveIn:document.getElementById('tnMoveIn').value,
+    dT:Number(document.getElementById('tnDT').value)||0,dP:Number(document.getElementById('tnDP').value)||0};
+  if(!d.name||!d.room){toast('יש להזין שם ומס׳ חדר');return;}
+  if(id){const i=S.tenants.findIndex(t=>t.id===id);S.tenants[i]={...S.tenants[i],...d};toast('הדייר עודכן');}
+  else{S.tenants.push({id:'t'+Date.now(),pays:[],...d});toast('דייר חדש נוסף');}
+  closeM('tenantModal');render();
+}
+function delTenant(){
+  const id=document.getElementById('tnId').value;
+  const t=S.tenants.find(x=>x.id===id);
+  if(!t||!confirm(`למחוק את ${t.name}?`))return;
+  S.tenants=S.tenants.filter(x=>x.id!==id);
+  closeM('tenantModal');toast('הדייר נמחק');render();
+}
+
+/* ── PARKING CRUD ── */
+function openParkModal(id){
+  const del=document.getElementById('pkDel');
+  if(id){
+    const p=S.parking.find(x=>x.id===id);if(!p)return;
+    document.getElementById('pkT').textContent=`חניה · ${p.name}`;
+    document.getElementById('pkId').value=p.id;
+    document.getElementById('pkName').value=p.name;
+    document.getElementById('pkPhone').value=p.phone||'';
+    document.getElementById('pkAmt').value=p.amt;
+    document.getElementById('pkDay').value=p.day;
+    del.style.display='inline-flex';
+  }else{
+    document.getElementById('pkT').textContent='חניה חדשה';
+    ['pkId','pkName','pkPhone','pkAmt'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('pkDay').value='1';del.style.display='none';
+  }
+  document.getElementById('parkModal').classList.add('open');
+}
+function saveParking(){
+  const id=document.getElementById('pkId').value;
+  const d={name:document.getElementById('pkName').value.trim(),phone:document.getElementById('pkPhone').value.trim(),amt:Number(document.getElementById('pkAmt').value)||0,day:Number(document.getElementById('pkDay').value)||1};
+  if(!d.name){toast('יש להזין שם');return;}
+  if(id){const i=S.parking.findIndex(p=>p.id===id);S.parking[i]={...S.parking[i],...d};toast('חניה עודכנה');}
+  else{S.parking.push({id:'p'+Date.now(),pays:[],...d});toast('חניה נוספה');}
+  closeM('parkModal');render();
+}
+
+function qPayParking(pid){
+  const p=S.parking.find(x=>x.id===pid);if(!p)return;
+  const today=new Date().toISOString().slice(0,10);
+  p.pays=p.pays||[];
+  const ex=p.pays.find(x=>x.month===sel);
+  if(ex){ex.paid=p.amt;ex.date=today;}else{p.pays.push({month:sel,paid:p.amt,date:today});}
+  toast(`חניה ${p.name} סומנה כשולם`);
+  render();
+}
+function unmarkPaidParking(pid){
+  const p=S.parking.find(x=>x.id===pid);if(!p)return;
+  if(!confirm(`לבטל את התשלום של חניית ${p.name} עבור ${mlab(sel)}?`))return;
+  p.pays=p.pays||[];
+  const ex=p.pays.find(x=>x.month===sel);
+  if(ex){ex.paid=0;ex.date='';}
+  toast(`התשלום של חניית ${p.name} בוטל`);
+  render();
+}
+function delParking(){
+  const id=document.getElementById('pkId').value;
+  const p=S.parking.find(x=>x.id===id);
+  if(!p||!confirm(`למחוק את חניית ${p.name}?`))return;
+  S.parking=S.parking.filter(x=>x.id!==id);
+  closeM('parkModal');toast('חניה נמחקה');render();
+}
+
+let sel=NOW_M;
+
+function hideLoading(){const l=document.getElementById('fbLoading');if(l)l.style.display='none';}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+</script>
+</body>
+</html>
