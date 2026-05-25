@@ -386,7 +386,8 @@ html,body{
         </select>
         <span id="statsResetInfo" style="font-size:12px;color:var(--faint);display:none"></span>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="statsResetDateInput" style="font-family:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)" />
         <button class="btn btn-p" onclick="setStatsReset()">
           <svg class="ico" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg>
           קבע נקודת התחלה
@@ -1048,8 +1049,16 @@ function switchTab(tab){
 }
 
 function setStatsReset(){
-  if(confirm('האם לקבוע את התאריך הנוכחי כנקודת התחלה לסטטיסטיקות?\n\nהנתונים לא יימחקו, רק הסטטיסטיקות יתחילו להיספר מהתאריך הזה.')){
-    S.statsResetDate=new Date().toISOString().slice(0,10);
+  const dateInput=document.getElementById('statsResetDateInput');
+  const selectedDate=dateInput.value;
+
+  if(!selectedDate){
+    toast('בחר תאריך תחילה');
+    return;
+  }
+
+  if(confirm(`האם לקבוע את ${fmtD(selectedDate)} כנקודת התחלה לסטטיסטיקות?\n\nהנתונים לא יימחקו, רק הסטטיסטיקות יתחילו להיספר מהתאריך הזה.`)){
+    S.statsResetDate=selectedDate;
     save();
     updateStatsResetUI();
     renderStats();
@@ -1073,6 +1082,20 @@ function updateStatsResetUI(){
   const clearBtn=document.getElementById('clearResetBtn');
   const resetInfo=document.getElementById('statsResetInfo');
   const periodSelect=document.getElementById('statsPeriod');
+  const dateInput=document.getElementById('statsResetDateInput');
+
+  // Set date input limits
+  if(dateInput){
+    // Find earliest tenant move-in date
+    const minDate=S.tenants.reduce((min,t)=>{
+      return !min||t.moveIn<min?t.moveIn:min;
+    },null)||new Date().toISOString().slice(0,10);
+
+    const today=new Date().toISOString().slice(0,10);
+    dateInput.min=minDate;
+    dateInput.max=today;
+    dateInput.value=S.statsResetDate||today;
+  }
 
   if(hasReset){
     clearBtn.style.display='inline-flex';
@@ -1148,27 +1171,60 @@ function renderStats(){
 
   // Top tenants (on-time payments)
   const tenantScores={};
+  const today=new Date().toISOString().slice(0,10);
+  const currentMonth=today.substring(0,7);
+
   S.tenants.forEach(t=>{
     let onTime=0,late=0,total=0;
     const moveInMonth=t.moveIn.substring(0,7); // YYYY-MM format
-    months.forEach(m=>{
+
+    // Check all months INCLUDING current month if late
+    const allRelevantMonths=[...months];
+
+    // Add current month if tenant is active and hasn't paid yet or paid late
+    if(isAct(t,currentMonth)&&!allRelevantMonths.includes(currentMonth)){
+      const p=getPay(t,currentMonth);
+      const dueDay=getTenantDueDay(t,currentMonth);
+      const [y,mo]=currentMonth.split('-').map(Number);
+      const dueDate=`${y}-${String(mo).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
+
+      // If due date passed and not paid or paid late
+      if(dueDate<today){
+        allRelevantMonths.push(currentMonth);
+      }
+    }
+
+    allRelevantMonths.forEach(m=>{
       if(!isAct(t,m))return;
       const p=getPay(t,m);
-      if(!p||p.paid===0)return;
 
       // Skip first month (move-in month) - it's always "on time"
       if(m===moveInMonth){
-        total++;
-        onTime++;
+        if(p&&p.paid>0){
+          total++;
+          onTime++;
+        }
         return;
       }
 
-      total++;
       const dueDay=getTenantDueDay(t,m);
       const [y,mo]=m.split('-').map(Number);
       const dueDate=`${y}-${String(mo).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
+
+      // If not paid yet but due date passed = late
+      if(!p||p.paid===0){
+        if(dueDate<today){
+          total++;
+          late++;
+        }
+        return;
+      }
+
+      // If paid, check if on time or late
+      total++;
       if(p.date<=dueDate)onTime++;else late++;
     });
+
     if(total>0){
       tenantScores[t.id]={name:t.name,room:t.room,onTime,late,total,rate:(onTime/total)*100};
     }
@@ -1259,19 +1315,50 @@ function showLateHistory(name,room){
   S.tenants.forEach(t=>{
     t.pays.forEach(p=>allMonths.add(p.month));
   });
-  const months=Array.from(allMonths).sort();
+  let months=Array.from(allMonths).sort();
   const moveInMonth=tenant.moveIn.substring(0,7); // YYYY-MM format
+  const today=new Date().toISOString().slice(0,10);
+  const currentMonth=today.substring(0,7);
+
+  // Add current month if active and due date passed
+  if(isAct(tenant,currentMonth)&&!months.includes(currentMonth)){
+    const dueDay=getTenantDueDay(tenant,currentMonth);
+    const [y,mo]=currentMonth.split('-').map(Number);
+    const dueDate=`${y}-${String(mo).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
+    if(dueDate<today){
+      months.push(currentMonth);
+      months.sort();
+    }
+  }
 
   // Build payment history
   const history=[];
   months.forEach(m=>{
     if(!isAct(tenant,m))return;
     const p=getPay(tenant,m);
-    if(!p||p.paid===0)return;
 
     const dueDay=getTenantDueDay(tenant,m);
     const [y,mo]=m.split('-').map(Number);
     const dueDate=`${y}-${String(mo).padStart(2,'0')}-${String(dueDay).padStart(2,'0')}`;
+
+    // Not paid yet
+    if(!p||p.paid===0){
+      if(dueDate<today){
+        const due=new Date(dueDate);
+        const now=new Date(today);
+        const daysLate=Math.floor((now-due)/(1000*60*60*24));
+        history.push({
+          month:m,
+          dueDate,
+          paidDate:null,
+          isLate:true,
+          daysLate,
+          isMoveIn:m===moveInMonth,
+          notPaid:true
+        });
+      }
+      return;
+    }
 
     // First month (move-in) is always on time
     const isLate=(m!==moveInMonth)&&(p.date>dueDate);
@@ -1289,7 +1376,8 @@ function showLateHistory(name,room){
       paidDate:p.date,
       isLate,
       daysLate,
-      isMoveIn:m===moveInMonth
+      isMoveIn:m===moveInMonth,
+      notPaid:false
     });
   });
 
@@ -1312,12 +1400,12 @@ function showLateHistory(name,room){
           ${h.isMoveIn?' <span style="font-size:11px;color:var(--faint);font-weight:400">(חודש כניסה)</span>':''}
         </div>
         <div class="history-date">
-          ${h.isMoveIn?'תאריך כניסה':'יעד'}: ${fmtD(h.dueDate)} · שולם: ${fmtD(h.paidDate)}
+          ${h.isMoveIn?'תאריך כניסה':'יעד'}: ${fmtD(h.dueDate)}${h.notPaid?' · <strong style="color:var(--warn)">טרם שולם</strong>':(` · שולם: ${fmtD(h.paidDate)}`)}
           ${h.isLate?` · איחור ${h.daysLate} ${h.daysLate===1?'יום':'ימים'}`:''}
         </div>
       </div>
       <span class="history-badge ${h.isLate?'late':'ontime'}">
-        ${h.isLate?'⏰ איחור':'✓ בזמן'}
+        ${h.isLate?(h.notPaid?'⚠️ לא שולם':'⏰ איחור'):'✓ בזמן'}
       </span>
     </div>
   `).join(''):'<div class="empty">אין נתונים</div>';
